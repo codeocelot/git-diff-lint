@@ -1,10 +1,33 @@
-#!/bin/bash 
+#!/bin/bash
+
+# modify from https://stackoverflow.com/a/12179492
+diff-lines() {
+    local path=
+    local line=
+    while read; do
+        esc=$'\033'
+        if [[ $REPLY =~ ---\ (a/)?.* ]]; then
+            continue
+        elif [[ $REPLY =~ \+\+\+\ (b/)?([^[:blank:]$esc]+).* ]]; then
+            path=${BASH_REMATCH[2]}
+        elif [[ $REPLY =~ @@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+)(,[0-9]+)?\ @@.* ]]; then
+            line=${BASH_REMATCH[2]}
+        elif [[ $REPLY =~ ^($esc\[[0-9;]+m)*([\ +-]) ]]; then
+            if [[ $REPLY == "+"* ]]; then  # we only care about added lines
+                echo "$path:$line:"
+            fi
+            if [[ ${BASH_REMATCH[2]} != - ]]; then
+                ((line++))
+            fi
+        fi
+    done
+}
 
 LINT="pycodestyle"
 BRANCH="stage"
 EXT="\.py$"
 
-while getopts ":x:b:e:h" opt; do
+while getopts ":x:b:e:l:h" opt; do
   case $opt in
     x)
       LINT=$OPTARG
@@ -15,12 +38,16 @@ while getopts ":x:b:e:h" opt; do
     e)
       EXT=$OPTARG
       ;;
+    l)
+      LINES=$OPTARG
+      ;;
     h)
       echo -e "Usage: git-diff-lint [options]\n"
       echo "Options:"
       echo -e "  -x\t lint command (default: pycodestyle)"
       echo -e "  -b\t parent branch (default: stage)"
-      echo -e "  -e\t file extension regex, (default: .py)"
+      echo -e "  -e\t file extension regex (default: .py)"
+      echo -e "  -l\t only changed lines (default: 0)"
       echo -e "  -h\t show this help message and exit"
       exit 0
       ;;
@@ -39,14 +66,34 @@ DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD $BRANCH) | gre
 
 if [ -n "$DIFF" ]
 then
-  ERRORS=$(eval $LINT $DIFF)
-  OUT=$?
-  if [ $OUT ]
-  then
+  OUT=0
+
+  # in golint, we can't lint two files in different packages
+  # i.e. we can't do `golint main.go pkg/handler.go`
+  # so we changed to lint files one by one
+  ERRORS=""
+  while read -r line; do
+    ERRORS+=$(eval $LINT $line 2>&1)
+    if [ $? ]; then
+        OUT=1
+    fi
+  done <<< "$DIFF"
+
+  if [[ $LINES -eq 1 ]]; then # lint changed file's added line
+    OUT=0
+    DIFF_LINE=$(git --no-pager diff -U0 | diff-lines)
+    while read -r line; do
+      echo "$ERRORS" | grep "$line" >&2
+      if [[ $? -eq "0" ]]; then
+        OUT=1
+      fi
+    done <<< "$DIFF_LINE"
+  elif [ $OUT ]; then # lint all changed file
     echo -e "$ERRORS" >&2
   fi
+
   exit $OUT
-else 
+else
   exit 0
-fi 
+fi
 
