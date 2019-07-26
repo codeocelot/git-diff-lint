@@ -2,25 +2,25 @@
 
 # modify from https://stackoverflow.com/a/12179492
 diff-lines() {
-    local path=
-    local line=
-    while read; do
-        esc=$'\033'
-        if [[ $REPLY =~ ---\ (a/)?.* ]]; then
-            continue
-        elif [[ $REPLY =~ \+\+\+\ (b/)?([^[:blank:]$esc]+).* ]]; then
-            path=${BASH_REMATCH[2]}
-        elif [[ $REPLY =~ @@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+)(,[0-9]+)?\ @@.* ]]; then
-            line=${BASH_REMATCH[2]}
-        elif [[ $REPLY =~ ^($esc\[[0-9;]+m)*([\ +-]) ]]; then
-            if [[ $REPLY == "+"* ]]; then  # we only care about added lines
-                echo "$path:$line:"
-            fi
-            if [[ ${BASH_REMATCH[2]} != - ]]; then
-                ((line++))
-            fi
-        fi
-    done
+  local path=
+  local line=
+  while read; do
+    esc=$'\033'
+    if [[ $REPLY =~ ---\ (a/)?.* ]]; then
+      continue
+    elif [[ $REPLY =~ \+\+\+\ (b/)?([^[:blank:]$esc]+).* ]]; then
+      path=${BASH_REMATCH[2]}
+    elif [[ $REPLY =~ @@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+)(,[0-9]+)?\ @@.* ]]; then
+      line=${BASH_REMATCH[2]}
+    elif [[ $REPLY =~ ^($esc\[[0-9;]+m)*([\ +-]) ]]; then
+      if [[ $REPLY == "+"* ]]; then  # we only care about added lines
+        echo "$path:$line:"
+      fi
+      if [[ ${BASH_REMATCH[2]} != - ]]; then
+        ((line++))
+      fi
+    fi
+  done
 }
 
 LINT="pycodestyle"
@@ -72,10 +72,10 @@ then
   # i.e. we can't do `golint main.go pkg/handler.go`
   # so we changed to lint files one by one
   ERRORS=""
-  while read -r line; do
-    ERRORS+=$(eval $LINT $line 2>&1)
+  while read -r file; do
+    ERRORS+=$(eval $LINT $file 2>&1)
     if [ $? ]; then
-        OUT=1
+      OUT=1
     fi
   done <<< "$DIFF"
 
