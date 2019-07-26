@@ -13,7 +13,7 @@ diff-lines() {
     elif [[ $REPLY =~ @@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+)(,[0-9]+)?\ @@.* ]]; then
       line=${BASH_REMATCH[2]}
     elif [[ $REPLY =~ ^($esc\[[0-9;]+m)*([\ +-]) ]]; then
-      if [[ $REPLY == "+"* ]]; then  # we only care about added lines
+      if [[ $path == *"${EXT}" && $REPLY == "+"* ]]; then  # we only care about added lines
         echo "$path:$line:"
       fi
       if [[ ${BASH_REMATCH[2]} != - ]]; then
@@ -62,6 +62,16 @@ while getopts ":x:b:e:l:h" opt; do
   esac
 done
 
+# check lint exist
+# https://stackoverflow.com/a/53798785/1203241
+function is_bin_in_path {
+    builtin type -P "$1" &> /dev/null
+}
+if ! is_bin_in_path "$LINT" ; then
+  echo "$LINT: not found, have you install it?"
+  exit $?
+fi
+
 DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD $BRANCH) | grep "${EXT}$")
 
 if [ -n "$DIFF" ]
@@ -82,7 +92,7 @@ then
 
   if [[ $LINES -eq 1 ]]; then # lint changed file's added line
     OUT=0
-    DIFF_LINE=$(git --no-pager diff -U0 | diff-lines)
+    DIFF_LINE=$(git --no-pager diff $BRANCH HEAD -U0 | diff-lines)
     while read -r line; do
       echo -e "$ERRORS" | grep "$line" >&2
       if [[ $? -eq "0" ]]; then
