@@ -92,7 +92,7 @@ then
 
   if [[ $LINES -eq 1 ]]; then # lint changed file's added line
     OUT=0
-    DIFF_LINE=$(git --no-pager diff $BRANCH -U0 | diff-lines)
+    DIFF_LINE=$(git --no-pager diff $(git merge-base HEAD $BRANCH) -U0 | diff-lines)
     while read -r line; do
       echo -e "$ERRORS" | grep "$line" >&2
       if [[ $? -eq "0" ]]; then
