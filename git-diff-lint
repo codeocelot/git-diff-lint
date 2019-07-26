@@ -62,7 +62,7 @@ while getopts ":x:b:e:l:h" opt; do
   esac
 done
 
-DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD $BRANCH) | grep $EXT)
+DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD $BRANCH) | grep "${EXT}$")
 
 if [ -n "$DIFF" ]
 then
@@ -76,6 +76,7 @@ then
     ERRORS+=$(eval $LINT $file 2>&1)
     if [ $? ]; then
       OUT=1
+      ERRORS+="\n"
     fi
   done <<< "$DIFF"
 
@@ -83,7 +84,7 @@ then
     OUT=0
     DIFF_LINE=$(git --no-pager diff -U0 | diff-lines)
     while read -r line; do
-      echo "$ERRORS" | grep "$line" >&2
+      echo -e "$ERRORS" | grep "$line" >&2
       if [[ $? -eq "0" ]]; then
         OUT=1
       fi
