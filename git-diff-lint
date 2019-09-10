@@ -1,8 +1,9 @@
-#!/bin/bash 
+#!/bin/bash
 
-LINT="pycodestyle"
-BRANCH="stage"
-EXT="\.py$"
+# LINT="pycodestyle"
+LINT=${LINT:='pycodestyle'}
+BRANCH=${BRANCH:="stage"}
+EXT=${EXT:="\.py$"}
 
 while getopts ":x:b:e:h" opt; do
   case $opt in
@@ -35,7 +36,10 @@ while getopts ":x:b:e:h" opt; do
   esac
 done
 
-DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD $BRANCH) | grep $EXT)
+DIFF=$(git diff --name-only --diff-filter=d $(git merge-base HEAD $BRANCH) | grep -E $EXT)
+
+printf "Linting following changed files\n"
+printf "$DIFF\n"
 
 if [ -n "$DIFF" ]
 then
@@ -46,7 +50,7 @@ then
     echo -e "$ERRORS" >&2
   fi
   exit $OUT
-else 
+else
   exit 0
-fi 
+fi
 
