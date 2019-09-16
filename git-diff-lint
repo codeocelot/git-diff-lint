@@ -94,6 +94,9 @@ then
     OUT=0
     DIFF_LINE=$(git --no-pager diff $(git merge-base HEAD $BRANCH) -U0 | diff-lines)
     while read -r line; do
+      if [ -z "$line" ]; then
+        continue
+      fi
       echo -e "$ERRORS" | grep "$line" >&2
       if [[ $? -eq "0" ]]; then
         OUT=1
