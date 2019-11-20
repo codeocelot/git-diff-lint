@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# LINT="pycodestyle"
 LINT=${LINT:='pycodestyle'}
 BRANCH=${BRANCH:="stage"}
 EXT=${EXT:="\.py$"}
